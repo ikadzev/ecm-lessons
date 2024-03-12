@@ -16,46 +16,35 @@
 	syscall 11
 .end_macro
 
-.macro check_num
+.macro check_num_a0 # ASCII to hex from a0
 	slti t6, a0, '0' # not a number
 	bne zero, t6, error
 	li t6, '0'
-	sub a0, a0, t6 # now num in a0
+	sub a0, a0, t6 # now dec in a0
 	slti t6, a0, 10 # if 0-9
 	bne zero, t6, end_check
-	slti t6, a0, 17 # not a number
+	slti t6, a0, 17 # NaN
 	bne zero, t6, error
-	li t6, 17
-	sub a0, a0, t6 # now hex in a0
+	addi a0, a0, -17 # now HEX in a0
 	slti t6, a0, 6 # if A-F
 	bne zero, t6, end_hex_check
-	slti t6, a0, 32
+	slti t6, a0, 32 # NaN
 	bne zero, t6, error
-	li t6, 32
-	sub a0, a0, t6
-	slti t6, a0, 6
+	addi a0, a0, -32 # now hex in a0
+	slti t6, a0, 6 # if a-f
 	bne, zero, t6, end_hex_check
-	beqz t6, error
+	j error # not a number
 end_hex_check:
 	addi a0, a0, 10
 end_check:
 .end_macro
 
-.macro read_num %t
-start_read_num:
-	readch # to a0
-	li t6, 10
-	beq a0, t6, end_read_num
-	check_num # from a0
-	slli %t, %t, 4	
-	add %t, %t, a0
-	j start_read_num
-end_read_num:
-.end_macro
-
-.macro read_sym
-	readch
-	li t3, 0
+main:
+	call read_num
+	mv t3, t0
+	call read_num
+	mv t4, t0
+	readch # read_sym
 	li t6, 0x26
 	beq a0, t6, and_num # &
 	li t6, 0x2B
@@ -65,19 +54,62 @@ end_read_num:
 	li t6, 0x7C
 	beq a0, t6, or_num # I
 	j error
-end_read_sym:
-.end_macro
+after_func:
+	li a0, 10
+	printch
+	call print_num
+	exit 0
 
-.macro recover_num # 0x to ASCII
-	li t1, 0
+read_num: # int read_num() - > t0
+	li t0, 0
+start_read_num:
+	readch
+	li t6, 10
+	beq a0, t6 end_read_num
+	check_num_a0
+	slli t0, t0, 4
+	add t0, t0, a0
+	j start_read_num
+end_read_num:
+	ret
+
+add_num:
+	add t0, t3, t4
+	j after_func
+
+and_num:
+	and t0, t3, t4
+	j after_func
+
+sub_num:
+	sub t0, t3, t4
+	j after_func
+
+or_num:
+	or t0, t3, t4
+	j after_func
+	
+print_num: # void print_num(hex in t0): prints number
+	li t3, 0xF0000000 # mask
+	li t5, 1 # counter
+	li t4, 8 # 8th register
+start_loop:
+	and a0, t3, t0 # get t5-th ch
+	bnez a0, end_loop # if t5-th ch is not zero - continue
+	beq t4, t5, print_zero # if t0 is zero - print 0
+	srli t3, t3, 4 # shift mask
+	addi t5, t5, 1 # cnt++
+	j start_loop
+end_loop: # in a0 - 1st digit of num
+start_num_print_loop:
+	sub t1, t4, t5 #recover_num
 	li t2, 1
-	sub t1, t4, t5
-	beqz t1, skip_recover_loop
+	beqz t1, end_recover_loop
 recover_loop:
 	srli a0, a0, 4
 	sub t1, t1, t2
 	bnez t1, recover_loop
-skip_recover_loop:
+end_recover_loop:
 	slti t6, a0, 10
 	beqz t6, recover_hex
 	addi a0, a0, '0'
@@ -85,52 +117,12 @@ skip_recover_loop:
 recover_hex:
 	addi a0, a0, 'A'
 end_recover:
-.end_macro
-
-main:
-	read_num t1
-	read_num t2
-	read_sym
-	
-add_num:
-	add t0, t1, t2
-	j print_num
-
-and_num:
-	and t0, t1, t2
-	j print_num
-
-sub_num:
-	sub t0, t1, t2
-	j print_num
-
-or_num:
-	or t0, t1, t2
-	j print_num
-	
-print_num: # result in t0
-	li t3, 0xF0000000 # mask
-	li t5, 1 # counter
-	li t4, 8 # 8th register
-	and a0, t3, t0
-	bnez a0, end_loop # if 1st ch is not 0
-start_loop: #else
-	beq t5, t4, print_zero
-	srli t3, t3, 4
-	addi t5, t5, 1
-	and a0, t3, t0
-	beqz a0, start_loop
-end_loop: # in a0 - 1st num
-start_fin_loop:
-	recover_num
 	printch
 	srli t3, t3, 4
 	and a0, t3, t0
 	addi t5, t5, 1
-	bne t5, t4, start_fin_loop
-	recover_num
-	printch
-	exit 0
+	ble t5, t4, start_num_print_loop
+	ret
 	
 print_zero:
 	li a0, '0'
