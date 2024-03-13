@@ -16,27 +16,13 @@
 	syscall 11
 .end_macro
 
-.macro check_num %num, %temp # ASCII to hex
+.macro check_num %num, %temp # ASCII to dec
 	slti %temp, %num, '0' # not a number
 	bnez %temp, error
 	li %temp, '0'
 	sub %num, %num, %temp # now dec in a0
 	slti %temp, %num, 10 # if 0-9
-	bnez %temp, end_check
-	slti %temp, %num, 17 # NaN
-	bnez %temp, error
-	addi %num, %num, -17 # now HEX in a0
-	slti %temp, %num, 6 # if A-F
-	bnez %temp, end_hex_check
-	slti %temp, %num, 32 # NaN
-	bnez %temp, error
-	addi %num, %num, -32 # now hex in a0
-	slti %temp, %num, 6 # if a-f
-	bnez %temp, end_hex_check
-	j error # not a number
-end_hex_check:
-	addi %num, %num, 10
-end_check:
+	beqz %temp, error
 .end_macro
 
 .macro push %r
@@ -51,10 +37,9 @@ end_check:
 
 main:
 	call read_num
-	push a0
+	mv a1, a0
 	call read_num
 	mv a2, a0
-	pop a1
 	readch # read_sym
 	li t0, 0x26
 	beq a0, t0, and_num # &
@@ -66,10 +51,10 @@ main:
 	beq a0, t0, or_num # I
 	j error
 after_func:
-	push a0
+	mv t0, a0
 	li a0, 10
 	printch
-	pop a0
+	mv a0, t0
 	call print_num
 	exit 0
 
