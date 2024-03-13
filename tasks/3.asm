@@ -51,10 +51,10 @@ end_check:
 
 main:
 	call read_num
-	push a0
+	mv s1, a0
 	call read_num
 	mv a2, a0
-	pop a1
+	mv a1, s1
 	readch # read_sym
 	li t0, 0x26
 	beq a0, t0, and_num # &
@@ -66,17 +66,20 @@ main:
 	beq a0, t0, or_num # I
 	j error
 after_func:
-	push a0
+	mv s0, a0
 	li a0, 10
 	printch
-	pop a0
+	mv a0, s0
 	call print_num
 	exit 0
 
 read_num: # int read_num() - > a0
 	push s0
+	li s0, 0
 	push s1
+	li s1, 0
 	push s2
+	li s2, 0
 start_read_num:
 	readch
 	li s0, 10
