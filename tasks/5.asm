@@ -49,21 +49,12 @@ end_check:
 	addi sp, sp, 4
 .end_macro
 
-test:
-	j main
-	li a1, 4
-	li a2, 5
-	call mult
-
 main:
 	call read_num
 	mv s1, a0
 	call read_num
-	mv s2, a0
-	li a0, 10
-	printch
+	mv a2, a0
 	mv a1, s1
-	mv a2, s2
 	call mult
 	call print_num
 	exit 0
@@ -85,8 +76,6 @@ start_mult:
 end_mult:
 	ret
 	
-	
-
 read_num: # int read_num() - > a0
 	li t1, 0
 start_read_num:
