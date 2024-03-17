@@ -65,6 +65,17 @@ main:
 	li t0, 0x7C
 	beq a0, t0, or_num # I
 	j error
+add_num:
+	add a0, a1, a2
+	j after_func
+and_num:
+	and a0, a1, a2
+	j after_func
+sub_num:
+	sub a0, a1, a2
+	j after_func
+or_num:
+	or a0, a1, a2
 after_func:
 	mv s0, a0
 	li a0, 10
@@ -74,44 +85,20 @@ after_func:
 	exit 0
 
 read_num: # int read_num() - > a0
-	push s0
-	li s0, 0
-	push s1
-	li s1, 0
-	push s2
-	li s2, 0
+	li t1, 0
 start_read_num:
 	readch
-	li s0, 10
-	beq a0, s0 end_read_num
-	check_num a0, s2
-	slli s1, s1, 4
-	add s1, s1, a0
+	li t0, 10
+	beq a0, t0 end_read_num
+	check_num a0, t0
+	slli t1, t1, 4
+	add t1, t1, a0
 	j start_read_num
 end_read_num:
-	mv a0, s1
-	pop s2
-	pop s1
-	pop s0
+	mv a0, t1
 	ret
 
-add_num:
-	add a0, a1, a2
-	j after_func
-
-and_num:
-	and a0, a1, a2
-	j after_func
-
-sub_num:
-	sub a0, a1, a2
-	j after_func
-
-or_num:
-	or a0, a1, a2
-	j after_func
-	
-print_num: # void print_num(hex in t0): prints number
+print_num: # void print_num(hex in a0): prints number
 	mv a1, a0 # in a0 - digit, in a1 - number
 	li t6, 0xF0000000 # mask
 	li t5, 1 # counter
@@ -119,19 +106,19 @@ print_num: # void print_num(hex in t0): prints number
 start_loop:
 	and a0, t6, a1 # get t6-th ch
 	bnez a0, end_loop # if t6-th ch is not zero - continue
-	beq t4, t5, print_zero # if a0 is zero - print 0
+	bne t4, t5, not_zero # if a0 is zero - print 0
+	li a0, '0'
+	printch
+	ret
+not_zero:
 	srli t6, t6, 4 # shift mask
 	addi t5, t5, 1 # cnt++
 	j start_loop
 end_loop: # in a0 - 1st digit of num
 start_num_print_loop:
 	sub t0, t4, t5
-recover_loop:
-	beqz t0, end_recover_loop
-	srli a0, a0, 4
-	addi t0, t0, -1
-	j recover_loop
-end_recover_loop:
+	slli t0, t0, 2
+	srl a0, a0, t0
 	slti t0, a0, 10
 	beqz t0, recover_hex
 	addi a0, a0, '0' # recover decimal
@@ -145,11 +132,6 @@ end_recover:
 	addi t5, t5, 1
 	ble t5, t4, start_num_print_loop
 	ret
-	
-print_zero:
-	li a0, '0'
-	printch
-	exit 0
 
 error:
 	exit 1
