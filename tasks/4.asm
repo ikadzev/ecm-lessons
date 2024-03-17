@@ -36,9 +36,9 @@
 .end_macro
 
 test:
-#	j main
-	li a1, 0x34A
-	li a2, 0x25A
+	j main
+	li a1, 0x2A
+	li a2, 0x5A
 	call sub_num_func
 
 main:
@@ -64,7 +64,7 @@ and_num:
 	and a0, a1, a2
 	j after_func
 sub_num:
-	sub a0, a1, a2
+	call sub_num_func
 	j after_func
 or_num:
 	or a0, a1, a2
@@ -95,7 +95,7 @@ add_num_func:
 	sub a2, a2, t2 # else sign2 = -sign2
 	add a2, a2, t1
 	push ra
-	call start_sub_num # and calling sub
+	call sub_num_func # and calling sub
 	pop ra
 	ret
 start_add_num:
@@ -128,27 +128,49 @@ sub_num_func:
 	and t1, a1, s0
 	and t2, a2, s0
 	mv a0, t1
+	blt a1, a2, swap
+return:
 	beq t1, t2, start_sub_num # if sign1 == sign2 --> normal sub
 	sub a2, a2, t2 # else sign2 = -sign2
 	add a2, a2, t1
 	push ra
-	call start_sub_num # and calling sub
+	call add_num_func # and calling sub
 	pop ra
 	ret
+swap:
+	mv s3, a1
+	mv a1, a2
+	mv a2, s3
+	li s3, 10
+	beq a0, s3, ten_in_a0
+	li a0, 10
+	j return
+ten_in_a0:
+	li a0, 11
+	j return
 start_sub_num:
 	slli t6, s1, 2 # cnt to cnt_bits in t6 
 	sll t5, s0, t6 # shifting mask to t5
 	and t1, a1, t5 # 1st
 	and t2, a2, t5 # 2nd
-	blt t2, t1, sub_dig
+	ble t2, t1, sub_dig
 	li t3, 10
 	sll t3, t3, t6
 	add t1, t1, t3
-	li t0, 1 # else
-	sll t0, t0, s1
-	slli t0, t0, 4
-	add a1, a1, t0
-	# ?
+	li t3, 1
+	li s3, 9
+	sll t3, t3, t6
+	sll s3, s3, t6
+sub_loop:
+	slli t3, t3, 4
+	slli s3, s3, 4
+	slli t5, t5, 4
+	and t4, t5, a1
+	bnez t4, end_sub_loop
+	add a1, a1, s3
+	j sub_loop
+end_sub_loop:
+	sub a1, a1, t3
 sub_dig:
 	sub t3, t1, t2 
 	add a0, a0, t3
