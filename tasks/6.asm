@@ -61,9 +61,6 @@ main:
 	call print_num
 	exit 0
 
-return_zero:
-	mv a0, zero
-	ret
 my_div:
 	slti t6, a0, 10
 	bnez t6, return_zero
@@ -76,6 +73,9 @@ my_div:
 	pop ra
 	sub a0, t0, a0
 	srli a0, a0, 1
+	ret
+return_zero:
+	mv a0, zero
 	ret
 	 
 my_mod:
