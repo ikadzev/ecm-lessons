@@ -1,45 +1,4 @@
-.macro syscall %t
-	li a7, %t
-	ecall
-.end_macro
-
-.macro exit %ecode
-	li a0, %ecode
-	syscall 93
-.end_macro
-
-.macro readch
-	syscall 12
-.end_macro 
-
-.macro printch
-	syscall 11
-.end_macro
-
-.macro check_num %num, %temp # ASCII to hex
-	slti %temp, %num, '0' # if < '0' -> NaN
-	bnez %temp, error
-	li %temp, '0'
-	sub %num, %num, %temp # now dec in a0
-	slti %temp, %num, 10 # if 0-9
-	beqz %temp, error # else NaN
-.end_macro
-
-.macro push %r
-	addi sp, sp -4
-	sw %r, 0(sp)
-.end_macro
-
-.macro pop %r
-	lw %r, 0(sp)
-	addi sp, sp, 4
-.end_macro
-
-test:
-	j main
-	li a1, 0x2A
-	li a2, 0x5A
-	call sub_num_func
+.include "funcs.asm"
 
 main:
 	call read_num # reading 1st num
@@ -229,6 +188,3 @@ start_num_print_loop:
 	addi t5, t5, 1 #cnt ++
 	ble t5, t4, start_num_print_loop # if cnt <= 8
 	ret
-
-error:
-	exit 1
