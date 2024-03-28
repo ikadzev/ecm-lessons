@@ -1,58 +1,11 @@
-.macro syscall %t
-	li a7, %t
-	ecall
-.end_macro
-
-.macro exit %ecode
-	li a0, %ecode
-	syscall 93
-.end_macro
-
-.macro readch
-	syscall 12
-.end_macro 
-
-.macro printch
-	syscall 11
-.end_macro
-
-.macro check_num %num, %temp # ASCII to hex
-	slti %temp, %num, '0' # not a number
-	bnez %temp, error
-	li %temp, '0'
-	sub %num, %num, %temp # now dec in a0
-	slti %temp, %num, 10 # if 0-9
-	bnez %temp, end_check
-	slti %temp, %num, 17 # NaN
-	bnez %temp, error
-	addi %num, %num, -17 # now HEX in a0
-	slti %temp, %num, 6 # if A-F
-	bnez %temp, end_hex_check
-	slti %temp, %num, 32 # NaN
-	bnez %temp, error
-	addi %num, %num, -32 # now hex in a0
-	slti %temp, %num, 6 # if a-f
-	bnez %temp, end_hex_check
-	j error # not a number
-end_hex_check:
-	addi %num, %num, 10
-end_check:
-.end_macro
-
-.macro push %r
-	addi sp, sp -4
-	sw %r, 0(sp)
-.end_macro
-
-.macro pop %r
-	lw %r, 0(sp)
-	addi sp, sp, 4
-.end_macro
+.include "funcs.asm"
 
 main:
 	call read_num
 	mv s0, a0
 	call my_div
+	mv s0, a0
+	exit 5
 	call print_num
 	li a0, 10
 	printch
@@ -62,13 +15,32 @@ main:
 	exit 0
 
 my_div:
+	push s0
+	mv s0, a0
+	push ra
+	call my_div_inner
+	pop ra
+	mv s1, a0
+	mv a1, a0
+	li a2, 10
+	push ra
+	call mult
+	pop ra
+	bgt s0, a0, end_my_div
+	addi s1, s1, -1
+end_my_div:
+	mv a0, s1
+	pop s0
+	ret
+	
+my_div_inner:
 	slti t6, a0, 10
 	bnez t6, return_zero
 	srli t0, a0, 2
 	srli a0, a0, 1
 	push ra
 	push t0
-	call my_div
+	call my_div_inner
 	pop t0
 	pop ra
 	sub a0, t0, a0
@@ -79,20 +51,20 @@ return_zero:
 	ret
 	 
 my_mod:
-	mv t6, a0
+	mv s0, a0
 	push ra
-	push t6
+	push s0
 	call my_div
-	pop t6
+	pop s0
 	pop ra
 	mv a1, a0
 	li a2, 10
-	push t6
+	push s0
 	push ra
 	call mult
 	pop ra
-	pop t6
-	sub a0, t6, a0
+	pop s0
+	sub a0, s0, a0
 	ret
 
 mult:
@@ -160,6 +132,3 @@ end_recover:
 	addi t5, t5, 1
 	ble t5, t4, start_num_print_loop
 	ret
-	
-error:
-	exit 1
