@@ -1,20 +1,20 @@
 j random_name_for_jump
-.macro syscall %t
+.macro sys %t
 	li a7, %t
 	ecall
 .end_macro
 
 .macro exit %ecode
 	li a0, %ecode
-	syscall 93
+	sys 93
 .end_macro
 
 .macro readch
-	syscall 12
+	sys 12
 .end_macro 
 
 .macro printch
-	syscall 11
+	sys 11
 .end_macro
 
 .macro check_num %num, %temp # ASCII to hex
@@ -53,6 +53,23 @@ end_check:
 .macro beqi %reg, %imm, %branch
 	li t0, %imm
 	beq %reg, t0, %branch
+.end_macro
+
+.macro prstr %str
+	push	a0
+	mv 	a0, %str
+	sys	4
+	pop	a0
+.end_macro
+
+.macro pstr %str
+.data
+	str: .asciz %str
+.text
+	push	a0
+	la 	a0, str
+	sys	4
+	pop	a0
 .end_macro
 
 read_dec:
