@@ -21,19 +21,3 @@ start:
 	call close
 	exit 0
 	
-cntln:
-	push ra
-	push s0
-	li s0, 0
-	addi a0, a0, -1
-cntln_loop:
-	addi s0, s0, 1
-	addi a0, a0, 1
-	li a1, '\n'
-	call strchr
-	bnez a0, cntln_loop
-	mv a0, s0
-	pop s0
-	pop ra
-	ret	
-	

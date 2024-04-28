@@ -80,6 +80,20 @@ end_check:
 	pop a0
 .end_macro
 
+.macro pch %char
+	push a0
+	li a0, %char
+	sys 11
+	pop a0
+.end_macro
+
+.macro pint %int
+	push a0
+	li a0, %int
+	sys 1
+	pop a0
+.end_macro
+
 read_dec:
 	li t1, 0
 start_read_dec:
@@ -219,25 +233,28 @@ find_len:
 	push	s0
 	push	s1
 	push	s2
-	li 	t0, -1 # error_code
+	li 	s2, -1 # error_code
 	mv 	s0, a0
 	li 	a1, 0
 	li	a2, 2
 	sys	62
-	beq	a0, t0, len_error
+	beq	a0, s2, len_error1
 	mv	s1, a0
 	mv	a0, s0
 	li	a1, 0
 	li	a2, 0
 	sys	62
-	beq	a0, t0, len_error
+	beq	a0, s2, len_error2
 	mv	a0, s1
 	pop 	s2
 	pop 	s1
 	pop 	s0
 	ret
-len_error:
-	pstr "Failed finding length"
+len_error1:
+	pstr "Failed finding length(1)"
+	exit 1
+len_error2:
+	pstr "Failed finding length(2)"
 	exit 1
 	
 open:
@@ -261,6 +278,8 @@ load:
 	mv a0, a1
 	addi a0, a0, 1
 	sys 9
+	li t6, -1
+	beq a0, t6, error
 	mv t2, a0
 	add t3, a0, t1
 	sb zero, 1(t3)
@@ -282,8 +301,25 @@ read:
 r_error:
 	pstr "Error while reading file"
 	exit 1
-
+	
+cntln:
+	push ra
+	push s0
+	li s0, 0
+	addi a0, a0, -1
+cntln_loop:
+	addi s0, s0, 1
+	addi a0, a0, 1
+	li a1, '\n'
+	call strchr
+	bnez a0, cntln_loop
+	mv a0, s0
+	pop s0
+	pop ra
+	ret	
+	
 error:
+	pstr "Error"
 	exit 1
 	
 random_name_for_jump:

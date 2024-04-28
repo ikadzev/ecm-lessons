@@ -1,19 +1,5 @@
 .include "funcs.asm"
 
-.macro pch %char
-	push a0
-	li a0, %char
-	printch
-	pop a0
-.end_macro
-
-.macro pint %int
-	push a0
-	li a0, %int
-	sys 1
-	pop a0
-.end_macro
-
 .macro FUNC %func, %str
 .data
 func_name: .asciz %str
