@@ -94,6 +94,16 @@ end_check:
 	pop a0
 .end_macro
 
+.macro print_int_ln %int %line
+	push a0	
+	mv a0, %int
+	sys 1
+	pch 9
+	prstr %line
+	pstrln ""
+	pop a0
+.end_macro
+
 read_dec:
 	li t1, 0
 start_read_dec:
